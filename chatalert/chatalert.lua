@@ -1,6 +1,6 @@
 addon.name      = 'chatalert';
 addon.author    = 'Aesk';
-addon.version   = '1.1';
+addon.version   = '2.0';
 addon.desc      = 'Alets when keywords are seen in chat.';
 addon.link      = 'https://github.com/JamesAnBo/';
 
@@ -11,6 +11,7 @@ local sound = 'Sound07.wav';
 
 local primary_terms = T{};
 local secondary_terms = T{};
+local ignored_terms = T{};
 local p_t;
 local s_t;
 
@@ -80,6 +81,28 @@ local function is_secondary(e)
 	return false;
 end
 
+local function is_ignored(e)
+	local msg = clean_str(e.message_modified);
+	local k = false;
+	local cstm = make_lower(ignored_terms);
+	
+	msg = msg:lower();
+	
+	k, _ = cstm:find_if(function (v, _)
+		if (msg:contains(v)) then
+			s_t = v;
+			return true;
+		end
+		return false;
+	end);
+	
+	if (k) then
+		return true;
+    end
+	
+	return false;
+end
+
 local function args_iterator (col)
 	local index = 2
 	local count = #col
@@ -108,10 +131,19 @@ local function list_secondary()
 	end
 end
 
+local function list_ignored()
+	PPrint(' ');
+	PPrint('~Ignored terms:');
+	for k,v in ipairs(ignored_terms) do
+		PPrint(k..') '..v);
+	end
+end
+
 local function print_help()
 
 PPrint('/ca add1 <term> - add a primary term. (not case sensative, can include spaces)');
 PPrint('/ca add2 <term> - add a secondary term. (not case sensative, can include spaces)');
+PPrint('/ca ignore <term> - add a term to be ignored. (not case sensative, can include spaces)');
 PPrint('/ca list - list all terms.');
 PPrint('/ca clear all - clear all terms.');
 PPrint('/ca clear primary - clear primary terms.');
@@ -138,22 +170,28 @@ ashita.events.register('command', 'command_cb', function (e)
 				if (#secondary_terms > 0) then
 					list_secondary();
 				end
-				if (#primary_terms == 0) and (#secondary_terms == 0) then
+				if (#ignored_terms > 0) then
+					list_ignored()
+				end
+				if (#primary_terms == 0) and (#secondary_terms == 0) and (#ignored_terms == 0) then
 					PPrint('No terms found.');
 				end
 			end
 		elseif (#args >= 3) then
 			if (cmd:any('clear','reset')) then
-				if (args[3] == 'all') then
+				if (args[3]:any('all')) then
 					primary_terms = T{};
 					secondary_terms = T{};
 					PPrint('Clearing all terms.');
-				elseif (args[3] == 'primary') then
+				elseif (args[3]:any('1', 'first', 'prime', 'primary')) then
 					primary_terms = T{};
 					PPrint('Clearing primary terms.');
-				elseif (args[3] == 'secondary') then
+				elseif (args[3]:any('2', 'second','secondary')) then
 					secondary_terms = T{};
 					PPrint('Clearing secondary terms.');
+				elseif (args[3]:any('ignore', 'ignored')) then
+					ignored_terms = T{};
+					PPrint('Clearing ignored terms.');
 				end
 			elseif (cmd:any('add1', 'addp', 'primary', 'addprimary')) then
 				local tbl = T{};
@@ -184,6 +222,20 @@ ashita.events.register('command', 'command_cb', function (e)
 					PPrint('"'..str..'" added to secondary terms.');
 					table.insert(secondary_terms, str);
 				end
+			elseif (cmd:any('ignore', 'addi', 'addignore')) then
+				local tbl = T{};
+				for k in args_iterator(args) do
+					table.insert(tbl, k);
+				end
+				local str = string.format("%s", table.concat(tbl, ' '));
+				str = string.lower(str)
+				if ignored_terms:contains(str) then
+					PPrint('"'..str..'" already in ignored terms.');
+					return
+				else
+					PPrint('"'..str..'" added to ignored terms.');
+					table.insert(ignored_terms, str);
+				end
 			end
 		end
 	end
@@ -194,7 +246,9 @@ ashita.events.register('text_in', 'text_in_cb', function (e)
     local cm = bit.band(e.mode,  0x000000FF);
 	
 	if (cm == 9 or cm == 10 or cm == 11 or cm == 12 or cm == 13 or cm == 14 or cm == 214) then
-		if (is_primary(e)) then
+		if (is_ignored(e)) then
+			return;
+		elseif (is_primary(e)) then
 			if (#secondary_terms > 0) then
 				if (is_secondary(e)) then
 					ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
