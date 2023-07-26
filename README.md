@@ -1,8 +1,9 @@
 # ChatAlert
 Makes a sound when key terms are found in chat
 
-If only primary terms are defined, ChatAlert will only look for those terms and alert you if any primary term is found in game chat.
-If secondary terms are defined, ChatAlert will only alert you if a term from both primary and secondary lists is found.
+If only primary terms are defined; ChatAlert will only look for those terms and alert you if any primary term is found in game chat.
+If secondary terms are defined; ChatAlert will only alert you if a term from both primary and secondary lists is found.
+If an ignored term is defined; If an ignored term is found in the message, ChatAlert will NOT alert you. Even if primary and secondary terms are present.
 
 Example 1:
 Primary terms: "wts", "Polearm", "Do you need it?"
@@ -24,6 +25,7 @@ incoming yell>> WTS my favorite Polearm PM me
 ```
 /ca add1 <term> - add a primary term. (not case sensative, can include spaces)
 /ca add2 <term> - add a secondary term. (not case sensative, can include spaces)
+/ca ignore <term> - add a term to be ignored. (not case sensative, can include spaces)
 /ca list - list all terms.
 /ca clear all - clear all terms.
 /ca clear primary - clear primary terms.
