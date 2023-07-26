@@ -1,14 +1,15 @@
 addon.name      = 'chatalert';
 addon.author    = 'Aesk';
-addon.version   = '2.1';
+addon.version   = '2.2';
 addon.desc      = 'Alets when keywords are seen in chat.';
 addon.link      = 'https://github.com/JamesAnBo/ChatAlert/';
 
 require('common');
 local chat = require('chat');
 
-local sound = 'Sound07.wav'; --Default alert sound..
-local messages = true; --Default show addon meesages..
+local sound = 'Sound07.wav'; -- Default alert sound..
+local playsound = true; -- Default play alert sound..
+local messages = true; -- Default show addon meesages..
 
 local primary_terms = T{};
 local secondary_terms = T{};
@@ -129,7 +130,6 @@ local function args_iterator (col)
 	local index = 2
 	local count = #col
 	
-	
 	return function ()
 		index = index + 1
 		
@@ -143,9 +143,9 @@ end
 
 local function list_primary()
 
-	PPrint('~Primary terms:');
+	PPrint('Primary terms:');
 	for k,v in ipairs(primary_terms) do
-		PPrint(k..') '..v);
+		PPrint('- '..v);
 	end
 	
 end
@@ -153,9 +153,9 @@ end
 local function list_secondary()
 
 	PPrint(' ');
-	PPrint('~Secondary terms:');
+	PPrint('Secondary terms:');
 	for k,v in ipairs(secondary_terms) do
-		PPrint(k..') '..v);
+		PPrint('- '..v);
 	end
 	
 end
@@ -163,67 +163,93 @@ end
 local function list_ignored()
 
 	PPrint(' ');
-	PPrint('~Ignored terms:');
+	PPrint('Ignored terms:');
 	for k,v in ipairs(ignored_terms) do
-		PPrint(k..') '..v);
+		PPrint('- '..v);
 	end
 	
 end
 
 local function print_help()
 
-PPrint('/ca add1 <term> - add a primary term. (not case sensative, can include spaces)');
-PPrint('/ca add2 <term> - add a secondary term. (not case sensative, can include spaces)');
-PPrint('/ca ignore <term> - add a term to be ignored. (not case sensative, can include spaces)');
-PPrint('/ca list - list all terms.');
-PPrint('/ca clear all - clear all terms.');
-PPrint('/ca clear primary - clear primary terms.');
-PPrint('/ca clear secondary - clear secondary terms.');
-PPrint('/ca clear ignored - clear ignored terms.');
-PPrint('/ca msg - toggle addon messages.');
-PPrint('/ca alert <1-7> - change the alert sound.');
-PPrint('/ca help - print help.');
+	print(chat.header(addon.name):append(chat.message('Available commands:')));
+
+	local cmds = T{
+		{'/ca add1 <term>', 'add a primary term. (not case sensative, can include spaces)'},
+		{'/ca add2 <term>', 'add a secondary term. (not case sensative, can include spaces)'},
+		{'/ca ignore <term>', 'add a term to be ignored. (not case sensative, can include spaces)'},
+		{'/ca list', 'list all terms.'},
+		{'/ca clear all', 'clear all terms.'},
+		{'/ca clear primary', 'clear primary terms.'},
+		{'/ca clear secondary', 'clear secondary terms.'},
+		{'/ca clear ignored', 'clear ignored terms.'},
+		{'/ca msg', 'toggle addon messages.'},
+		{'/ca alert <1-7>', 'change the alert sound.'},
+		{'/ca help', 'print help.'},
+	};
+
+    -- Print the command list..
+    cmds:ieach(function (v)
+        print(chat.header(addon.name):append(chat.error('Usage: ')):append(chat.message(v[1]):append(' - ')):append(chat.color1(6, v[2])));
+    end);
 
 end
 
 ashita.events.register('command', 'command_cb', function (e)
 
     local args = e.command:args();
+	
     if (#args == 0 or (args[1] ~= '/chatalert' and args[1] ~= '/ca')) then
         return;
     else
 		e.blocked = true;
         local cmd = args[2];
 	
-		if (#args == 2) then
-			if (cmd:any('help')) then
+		if (cmd:any('help')) then
+		
+			-- Print help..
+			print_help()
 			
-				-- Print help..
-				print_help()
+		elseif (cmd:any('message', 'msg')) then
+		
+			-- Toggle addon messages on/off
+			messages = not messages
+			PPrint('Messages changed to '..tostring(messages));
+			
+		elseif (cmd:any('list')) then
+		
+			-- Print a list of defined terms..
+			if (#primary_terms > 0) then
+				list_primary();
+			end
+			if (#secondary_terms > 0) then
+				list_secondary();
+			end
+			if (#ignored_terms > 0) then
+				list_ignored()
+			end
+			if (#primary_terms == 0) and (#secondary_terms == 0) and (#ignored_terms == 0) then
+				PPrint('No terms found.');
+			end
+			
+		elseif (cmd:any('sound', 'alert')) then
+			-- Toggle the alert sound on/off..
+			if (#args == 2) or (args[3] == nil) then
+				playsound = not playsound;
+				PPrint('Alert is '..tostring(playsound));
 				
-			elseif (cmd:any('message', 'msg')) then
-			
-				-- Toggle addon messages on/off
-				messages = not messages
-				PPrint('Messages changed to '..tostring(messages));
-				
-			elseif (cmd:any('list')) then
-			
-				-- Print a list of defined terms..
-				if (#primary_terms > 0) then
-					list_primary();
-				end
-				if (#secondary_terms > 0) then
-					list_secondary();
-				end
-				if (#ignored_terms > 0) then
-					list_ignored()
-				end
-				if (#primary_terms == 0) and (#secondary_terms == 0) and (#ignored_terms == 0) then
-					PPrint('No terms found.');
+			-- Change the alert sound..
+			elseif IsNum(args[3]) then
+				local num = tonumber(args[3])
+				if (num <= 0) or (num > 7) then
+					PPrint('Choose alert 1-7.');
+				else
+					sound = ('Sound0'..args[3]..'.wav')
+					PPrint('Alert changed to '..args[3]);
 				end
 				
 			end
+				
 		elseif (#args >= 3) then
 			if (cmd:any('clear','reset')) then
 			
@@ -242,20 +268,6 @@ ashita.events.register('command', 'command_cb', function (e)
 					ignored_terms = T{};
 					PPrint('Clearing ignored terms.');
 				end
-				
-			elseif (cmd:any('sound', 'alert')) then
-			
-				-- Change the alert sound..
-				if IsNum(args[3]) then
-					local num = tonumber(args[3])
-					if (num <= 0) or (num > 7) then
-						PPrint('Choose alert 1-7.');
-					else
-						sound = ('Sound0'..args[3]..'.wav')
-						PPrint('Alert changed to '..args[3]);
-					end
-				end
-				
 			elseif (cmd:any('add1', 'addp', 'primary', 'addprimary')) then
 			
 				-- Define a primary term..
@@ -309,7 +321,9 @@ ashita.events.register('command', 'command_cb', function (e)
 				end
 				
 			end
+			
 		end
+		
 	end
 	
 end);
@@ -346,17 +360,27 @@ ashita.events.register('text_in', 'text_in_cb', function (e)
 		elseif (is_primary(e)) then
 			if (#secondary_terms > 0) then
 				if (is_secondary(e)) then
-					ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
+				
+					if playsound == true then
+						ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
+					end
+					
 					if messages == true then
 						PPrint('Message contains ['..p_t..'] & ['..s_t..']');
 					end
+					
 					return;
 				end
 			else
-				ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
+			
+				if playsound == true then
+					ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
+				end
+				
 				if messages == true then
 					PPrint('Message contains ['..p_t..']');
 				end
+				
 				return;
 			end
 		end
@@ -366,6 +390,6 @@ end);
 
 function PPrint(txt)
 
-    print(string.format('[\30\08ChatAlert\30\01] %s', txt));
+	print(chat.header(addon.name):append(chat.message(txt)));
 	
 end
