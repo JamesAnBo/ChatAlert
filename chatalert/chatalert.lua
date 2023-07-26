@@ -1,39 +1,18 @@
 addon.name      = 'chatalert';
 addon.author    = 'Aesk';
-addon.version   = '1.0';
+addon.version   = '1.1';
 addon.desc      = 'Alets when keywords are seen in chat.';
 addon.link      = 'https://github.com/JamesAnBo/';
 
 require('common');
-local chat      = require('chat');
+local chat = require('chat');
 
 local sound = 'Sound07.wav';
 
-local matching = true;
-local primary_words = T{'bastok'}; -- Initial keywords to match from message.
-local secondary_words = T{'9-2'}; -- Secondary keywords to match if matching = true.
-local p_w;
-local s_w;
-
-local name;
-local message;
-
---[[
-
-incoming chat hex/IDs:
-0x00 / 9 = /say
-0x01 / 10 = /shout
-0x26 / 11 = /yell
-0x03 / 12 = /tell
-0x04 / 13 = /party
-0x05 / 14 = /linkshell
-0x27 / 214 = /linksehll2
-0x08 / 15 = /emote
-0x33 / 212 = /unity
-0x34 / 220 = /assistj
-0x35 / 222 = /assiste
-
---]]
+local primary_terms = T{};
+local secondary_terms = T{};
+local p_t;
+local s_t;
 
 local function clean_str(str)
     -- Parse the strings auto-translate tags..
@@ -60,13 +39,13 @@ end
 local function is_primary(e)
 	local msg = clean_str(e.message_modified);
 	local k = false;
-	local cstm = make_lower(primary_words);
+	local cstm = make_lower(primary_terms);
 	
 	msg = msg:lower();
 	
 	k, _ = cstm:find_if(function (v, _)
 		if (msg:contains(v)) then
-			p_w = v;
+			p_t = v;
 			return true;
 		end
 		return false;
@@ -82,13 +61,13 @@ end
 local function is_secondary(e)
 	local msg = clean_str(e.message_modified);
 	local k = false;
-	local cstm = make_lower(secondary_words);
+	local cstm = make_lower(secondary_terms);
 	
 	msg = msg:lower();
 	
 	k, _ = cstm:find_if(function (v, _)
 		if (msg:contains(v)) then
-			s_w = v;
+			s_t = v;
 			return true;
 		end
 		return false;
@@ -101,44 +80,114 @@ local function is_secondary(e)
 	return false;
 end
 
+local function args_iterator (col)
+	local index = 2
+	local count = #col
+
+	return function ()
+		index = index + 1
+
+		if index <= count then
+			return col[index]
+		end
+	end
+end
+
+local function list_primary()
+	PPrint('~Primary terms:');
+	for k,v in ipairs(primary_terms) do
+		PPrint(k..') '..v);
+	end
+end
+
+local function list_secondary()
+	PPrint(' ');
+	PPrint('~Secondary terms:');
+	for k,v in ipairs(secondary_terms) do
+		PPrint(k..') '..v);
+	end
+end
+
+local function print_help()
+
+PPrint('/ca add1 <term> - add a primary term. (not case sensative, can include spaces)');
+PPrint('/ca add2 <term> - add a secondary term. (not case sensative, can include spaces)');
+PPrint('/ca list - list all terms.');
+PPrint('/ca clear all - clear all terms.');
+PPrint('/ca clear primary - clear primary terms.');
+PPrint('/ca clear secondary - clear secondary terms.');
+PPrint('/ca help - print help.');
+
+end
+
 ashita.events.register('command', 'command_cb', function (e)
     local args = e.command:args();
-    if (#args == 0 or (args[1] ~= '/chatalert')) then
+    if (#args == 0 or (args[1] ~= '/chatalert' and args[1] ~= '/ca')) then
         return;
     else
 		e.blocked = true;
         local cmd = args[2];
 	
-		if ((#args == 2) and (cmd:any('match'))) then
-			matching = not matching;
-			PPrint('Matching is '..tostring(matching));
+		if (#args == 2) then
+			if (cmd:any('help')) then
+				print_help()
+			elseif (cmd:any('list')) then
+				if (#primary_terms > 0) then
+					list_primary();
+				end
+				if (#secondary_terms > 0) then
+					list_secondary();
+				end
+				if (#primary_terms == 0) and (#secondary_terms == 0) then
+					PPrint('No terms found.');
+				end
+			end
+		elseif (#args >= 3) then
+			if (cmd:any('clear','reset')) then
+				if (args[3] == 'all') then
+					primary_terms = T{};
+					secondary_terms = T{};
+					PPrint('Clearing all terms.');
+				elseif (args[3] == 'primary') then
+					primary_terms = T{};
+					PPrint('Clearing primary terms.');
+				elseif (args[3] == 'secondary') then
+					secondary_terms = T{};
+					PPrint('Clearing secondary terms.');
+				end
+			elseif (cmd:any('add1', 'addp', 'primary', 'addprimary')) then
+				local tbl = T{};
+				
+				for k in args_iterator(args) do
+					table.insert(tbl, k);
+				end
+				local str = string.format("%s", table.concat(tbl, ' '));
+				str = string.lower(str)
+				if primary_terms:contains(str) then
+					PPrint('"'..str..'" already in primary terms.');
+					return
+				else
+					PPrint('"'..str..'" added to primary terms.');
+					table.insert(primary_terms, str);
+				end
+			elseif (cmd:any('add2', 'adds', 'secondary', 'addsecondary')) then
+				local tbl = T{};
+				for k in args_iterator(args) do
+					table.insert(tbl, k);
+				end
+				local str = string.format("%s", table.concat(tbl, ' '));
+				str = string.lower(str)
+				if secondary_terms:contains(str) then
+					PPrint('"'..str..'" already in secondary terms.');
+					return
+				else
+					PPrint('"'..str..'" added to secondary terms.');
+					table.insert(secondary_terms, str);
+				end
+			end
 		end
 	end
 	
-end);
-
-ashita.events.register('packet_in', 'packet_in_cb', function (e)
-	su = struct.unpack('b', e.data_modified, 0x04 + 1)
-	
-	--(su == 0x00 or su == 0x01 or su == 0x26 or su == 0x03 or su == 0x04 or su == 0x05 or su == 0x27)
-    -- -- Packet: Chat
-    if (e.id == 0x0017 and (su == 0x00 or su == 0x01 or su == 0x26 or su == 0x03 or su == 0x04 or su == 0x05 or su == 0x27)) then
-        -- -- Calculate the size of the message from the packet..
-        local id_size   = struct.unpack('H', e.data_modified, 0x00 + 0x01);
-        local size      = (0x04 * (bit.rshift(id_size, 0x09)) - 0x18) + 0x01;
-		local sender    = struct.unpack('c15', e.data_modified, 0x08 + 0x01);
-        local msg       = struct.unpack(('c%d'):fmt(size), e.data_modified, 0x17 + 0x01);
-		
-		
-        -- -- Fixups..
-        sender  = string.trim(sender);
-        msg     = string.trim(msg, '\0');
-		
-		msg = AshitaCore:GetChatManager():ParseAutoTranslate(msg, true);
-		
-		-- Returns the sender.
-		name = sender
-    end
 end);
 
 ashita.events.register('text_in', 'text_in_cb', function (e)
@@ -146,15 +195,15 @@ ashita.events.register('text_in', 'text_in_cb', function (e)
 	
 	if (cm == 9 or cm == 10 or cm == 11 or cm == 12 or cm == 13 or cm == 14 or cm == 214) then
 		if (is_primary(e)) then
-			if matching == true then
+			if (#secondary_terms > 0) then
 				if (is_secondary(e)) then
 					ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
-					PPrint('Message from '..name..' contains ['..p_w..'] & ['..s_w..']');
+					PPrint('Message contains ['..p_t..'] & ['..s_t..']');
 					return;
 				end
 			else
 				ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
-				PPrint('Message from '..name..' contains ['..p_w..']');
+				PPrint('Message contains ['..p_t..']');
 				return;
 			end
 		end
