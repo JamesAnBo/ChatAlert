@@ -175,17 +175,17 @@ local function print_help()
 	print(chat.header(addon.name):append(chat.message('Available commands:')));
 
 	local cmds = T{
-		{'/ca add1 <term>', 'add a primary term. (not case sensative, can include spaces)'},
-		{'/ca add2 <term>', 'add a secondary term. (not case sensative, can include spaces)'},
-		{'/ca ignore <term>', 'add a term to be ignored. (not case sensative, can include spaces)'},
-		{'/ca list', 'list all terms.'},
-		{'/ca clear all', 'clear all terms.'},
-		{'/ca clear primary', 'clear primary terms.'},
-		{'/ca clear secondary', 'clear secondary terms.'},
-		{'/ca clear ignored', 'clear ignored terms.'},
-		{'/ca msg', 'toggle addon messages.'},
-		{'/ca alert <1-7>', 'change the alert sound.'},
-		{'/ca help', 'print help.'},
+		{'/ca add1 <term>', 'Add a primary term. (not case sensative, can include spaces)'},
+		{'/ca add2 <term>', 'Add a secondary term. (not case sensative, can include spaces)'},
+		{'/ca ignore <term>', 'Add a term to be ignored. (not case sensative, can include spaces)'},
+		{'/ca list', 'List all terms.'},
+		{'/ca clear all', 'Clear all terms.'},
+		{'/ca clear primary', 'Clear primary terms.'},
+		{'/ca clear secondary', 'Clear secondary terms.'},
+		{'/ca clear ignored', 'Clear ignored terms.'},
+		{'/ca msg', 'Toggle addon messages.'},
+		{'/ca alert <1-7>', 'Change the alert sound. If no number, toggles alerts on/off.'},
+		{'/ca help', 'Print help.'},
 	};
 
     -- Print the command list..
