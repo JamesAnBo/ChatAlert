@@ -244,7 +244,23 @@ end);
 
 ashita.events.register('text_in', 'text_in_cb', function (e)
     local cm = bit.band(e.mode,  0x000000FF);
-	
+--[[
+
+incoming chat IDs:
+9 = /say
+10 = /shout
+11 = /yell
+12 = /tell
+13 = /party
+14 = /linkshell
+214 = /linksehll2
+15 = /emote
+212 = /unity
+220 = /assistj
+222 = /assiste
+
+]]--
+	-- Say, Shout, Yell, Tell, Party, Linkshell1, Linkshell2
 	if (cm == 9 or cm == 10 or cm == 11 or cm == 12 or cm == 13 or cm == 14 or cm == 214) then
 		if (is_ignored(e)) then
 			return;
