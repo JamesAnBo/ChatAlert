@@ -30,5 +30,8 @@ incoming yell>> WTS my favorite Polearm PM me  <br>
 /ca clear all - clear all terms.
 /ca clear primary - clear primary terms.
 /ca clear secondary - clear secondary terms.
+/ca clear ignored - clear ignored terms.
+/ca msg - toggle addon messages.
+/ca alert <1-7> - change the alert sound.
 /ca help - print help.
 ```
