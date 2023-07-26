@@ -32,6 +32,6 @@ incoming yell>> WTS my favorite Polearm PM me  <br>
 /ca clear secondary - clear secondary terms.
 /ca clear ignored - clear ignored terms.
 /ca msg - toggle addon messages.
-/ca alert <1-7> - change the alert sound.
+/ca alert <1-7> - change the alert sound. If no number, toggles alerts on/off.
 /ca help - print help.
 ```
