@@ -1,13 +1,14 @@
 addon.name      = 'chatalert';
 addon.author    = 'Aesk';
-addon.version   = '2.0';
+addon.version   = '2.1';
 addon.desc      = 'Alets when keywords are seen in chat.';
-addon.link      = 'https://github.com/JamesAnBo/ChatAlert';
+addon.link      = 'https://github.com/JamesAnBo/ChatAlert/';
 
 require('common');
 local chat = require('chat');
 
-local sound = 'Sound07.wav';
+local sound = 'Sound07.wav'; --Default alert sound..
+local messages = true; --Default show addon meesages..
 
 local primary_terms = T{};
 local secondary_terms = T{};
@@ -16,6 +17,7 @@ local p_t;
 local s_t;
 
 local function clean_str(str)
+
     -- Parse the strings auto-translate tags..
     str = AshitaCore:GetChatManager():ParseAutoTranslate(str, true);
 
@@ -24,26 +26,38 @@ local function clean_str(str)
     str = str:strip_translate(true);
 
     return str;
+	
 end
 
 local function make_lower(t)
+
 	lst = t;
 	
 	for k,v in pairs(lst) do
     lst[k] = v:lower()
 	end
 	
+	-- Return table in lower case..
 	return lst;
 
 end
 
+local function IsNum(str)
+
+	-- Return true if str is a number..
+	return not (str == "" or str:find("%D"))
+	
+end
+
 local function is_primary(e)
+
 	local msg = clean_str(e.message_modified);
 	local k = false;
 	local cstm = make_lower(primary_terms);
 	
 	msg = msg:lower();
 	
+	-- Return true if message contains a primary term..
 	k, _ = cstm:find_if(function (v, _)
 		if (msg:contains(v)) then
 			p_t = v;
@@ -57,15 +71,18 @@ local function is_primary(e)
     end
 	
 	return false;
+	
 end
 
 local function is_secondary(e)
+
 	local msg = clean_str(e.message_modified);
 	local k = false;
 	local cstm = make_lower(secondary_terms);
 	
 	msg = msg:lower();
 	
+	-- Return true if message contains a secondary term..
 	k, _ = cstm:find_if(function (v, _)
 		if (msg:contains(v)) then
 			s_t = v;
@@ -79,15 +96,18 @@ local function is_secondary(e)
     end
 	
 	return false;
+	
 end
 
 local function is_ignored(e)
+
 	local msg = clean_str(e.message_modified);
 	local k = false;
 	local cstm = make_lower(ignored_terms);
 	
 	msg = msg:lower();
 	
+	-- Return true if message contains an ignored term..
 	k, _ = cstm:find_if(function (v, _)
 		if (msg:contains(v)) then
 			s_t = v;
@@ -101,42 +121,53 @@ local function is_ignored(e)
     end
 	
 	return false;
+	
 end
 
 local function args_iterator (col)
+
 	local index = 2
 	local count = #col
-
+	
+	
 	return function ()
 		index = index + 1
-
+		
+		-- Returns args[3+] for concat..
 		if index <= count then
 			return col[index]
 		end
 	end
+	
 end
 
 local function list_primary()
+
 	PPrint('~Primary terms:');
 	for k,v in ipairs(primary_terms) do
 		PPrint(k..') '..v);
 	end
+	
 end
 
 local function list_secondary()
+
 	PPrint(' ');
 	PPrint('~Secondary terms:');
 	for k,v in ipairs(secondary_terms) do
 		PPrint(k..') '..v);
 	end
+	
 end
 
 local function list_ignored()
+
 	PPrint(' ');
 	PPrint('~Ignored terms:');
 	for k,v in ipairs(ignored_terms) do
 		PPrint(k..') '..v);
 	end
+	
 end
 
 local function print_help()
@@ -148,11 +179,15 @@ PPrint('/ca list - list all terms.');
 PPrint('/ca clear all - clear all terms.');
 PPrint('/ca clear primary - clear primary terms.');
 PPrint('/ca clear secondary - clear secondary terms.');
+PPrint('/ca clear ignored - clear ignored terms.');
+PPrint('/ca msg - toggle addon messages.');
+PPrint('/ca alert <1-7> - change the alert sound.');
 PPrint('/ca help - print help.');
 
 end
 
 ashita.events.register('command', 'command_cb', function (e)
+
     local args = e.command:args();
     if (#args == 0 or (args[1] ~= '/chatalert' and args[1] ~= '/ca')) then
         return;
@@ -162,8 +197,19 @@ ashita.events.register('command', 'command_cb', function (e)
 	
 		if (#args == 2) then
 			if (cmd:any('help')) then
+			
+				-- Print help..
 				print_help()
+				
+			elseif (cmd:any('message', 'msg')) then
+			
+				-- Toggle addon messages on/off
+				messages = not messages
+				PPrint('Messages changed to '..tostring(messages));
+				
 			elseif (cmd:any('list')) then
+			
+				-- Print a list of defined terms..
 				if (#primary_terms > 0) then
 					list_primary();
 				end
@@ -176,9 +222,12 @@ ashita.events.register('command', 'command_cb', function (e)
 				if (#primary_terms == 0) and (#secondary_terms == 0) and (#ignored_terms == 0) then
 					PPrint('No terms found.');
 				end
+				
 			end
 		elseif (#args >= 3) then
 			if (cmd:any('clear','reset')) then
+			
+				-- Clear all, or defined, list..
 				if (args[3]:any('all')) then
 					primary_terms = T{};
 					secondary_terms = T{};
@@ -193,7 +242,23 @@ ashita.events.register('command', 'command_cb', function (e)
 					ignored_terms = T{};
 					PPrint('Clearing ignored terms.');
 				end
+				
+			elseif (cmd:any('sound', 'alert')) then
+			
+				-- Change the alert sound..
+				if IsNum(args[3]) then
+					local num = tonumber(args[3])
+					if (num <= 0) or (num > 7) then
+						PPrint('Choose alert 1-7.');
+					else
+						sound = ('Sound0'..args[3]..'.wav')
+						PPrint('Alert changed to '..args[3]);
+					end
+				end
+				
 			elseif (cmd:any('add1', 'addp', 'primary', 'addprimary')) then
+			
+				-- Define a primary term..
 				local tbl = T{};
 				
 				for k in args_iterator(args) do
@@ -208,7 +273,10 @@ ashita.events.register('command', 'command_cb', function (e)
 					PPrint('"'..str..'" added to primary terms.');
 					table.insert(primary_terms, str);
 				end
+				
 			elseif (cmd:any('add2', 'adds', 'secondary', 'addsecondary')) then
+			
+				-- Define a secondary term..
 				local tbl = T{};
 				for k in args_iterator(args) do
 					table.insert(tbl, k);
@@ -222,7 +290,10 @@ ashita.events.register('command', 'command_cb', function (e)
 					PPrint('"'..str..'" added to secondary terms.');
 					table.insert(secondary_terms, str);
 				end
+				
 			elseif (cmd:any('ignore', 'addi', 'addignore')) then
+			
+				-- Define an ignored term..
 				local tbl = T{};
 				for k in args_iterator(args) do
 					table.insert(tbl, k);
@@ -236,6 +307,7 @@ ashita.events.register('command', 'command_cb', function (e)
 					PPrint('"'..str..'" added to ignored terms.');
 					table.insert(ignored_terms, str);
 				end
+				
 			end
 		end
 	end
@@ -243,37 +315,48 @@ ashita.events.register('command', 'command_cb', function (e)
 end);
 
 ashita.events.register('text_in', 'text_in_cb', function (e)
+	
     local cm = bit.band(e.mode,  0x000000FF);
---[[
+	
+	-- Get incoming chat messages..
+	
+	--[[
 
-incoming chat IDs:
-9 = /say
-10 = /shout
-11 = /yell
-12 = /tell
-13 = /party
-14 = /linkshell
-214 = /linksehll2
-15 = /emote
-212 = /unity
-220 = /assistj
-222 = /assiste
+	incoming chat IDs:
+	9 = /say
+	10 = /shout
+	11 = /yell
+	12 = /tell
+	13 = /party
+	14 = /linkshell
+	214 = /linksehll2
+	15 = /emote
+	212 = /unity
+	220 = /assistj
+	222 = /assiste
 
-]]--
-	-- Say, Shout, Yell, Tell, Party, Linkshell1, Linkshell2
-	if (cm == 9 or cm == 10 or cm == 11 or cm == 12 or cm == 13 or cm == 14 or cm == 214) then
+	]]--
+	
+	local channels = T{9, 10, 11, 12, 13, 14, 214};
+	
+	-- Search Say, Shout, Yell, Tell, Party, Linkshell1, and Linkshell2 for terms..
+	if (channels:contains(cm)) then
 		if (is_ignored(e)) then
 			return;
 		elseif (is_primary(e)) then
 			if (#secondary_terms > 0) then
 				if (is_secondary(e)) then
 					ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
-					PPrint('Message contains ['..p_t..'] & ['..s_t..']');
+					if messages == true then
+						PPrint('Message contains ['..p_t..'] & ['..s_t..']');
+					end
 					return;
 				end
 			else
 				ashita.misc.play_sound(addon.path:append('\\sounds\\'):append(sound));
-				PPrint('Message contains ['..p_t..']');
+				if messages == true then
+					PPrint('Message contains ['..p_t..']');
+				end
 				return;
 			end
 		end
@@ -282,5 +365,7 @@ incoming chat IDs:
 end);
 
 function PPrint(txt)
+
     print(string.format('[\30\08ChatAlert\30\01] %s', txt));
+	
 end
