@@ -2,7 +2,7 @@ addon.name      = 'chatalert';
 addon.author    = 'Aesk';
 addon.version   = '2.0';
 addon.desc      = 'Alets when keywords are seen in chat.';
-addon.link      = 'https://github.com/JamesAnBo/';
+addon.link      = 'https://github.com/JamesAnBo/ChatAlert';
 
 require('common');
 local chat = require('chat');
